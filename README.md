@@ -1,5 +1,5 @@
 
-# Sentiment Analyzer of Movie Reviews
+# Sentiment Classifier of Movie Reviews
 This program consists of a classifier that is able to decide whether a movie review is good or bad. The classifier is trained on an IMDB movie review dataset of 50k reviews. The program also spits out the accuracy and precision of the classifier.
 
 ## Dependencies
@@ -21,7 +21,7 @@ With pip, it can be done by
 `$ pip install -r requirements.txt`.
 
 ## Usage
-The program is stored as `sentiment_analyzer.py`, so running it with python is all you need to do.
+The program is stored as `sentiment_classifier.py`, so running it with python is all you need to do.
 
 ## About the project
 We decided to use NLTK because, being a toolkit released in 2001, it can give us insights in how things changed through time, to be able to compare it to the newer models that other courses will delve into.
