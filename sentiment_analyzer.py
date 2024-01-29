@@ -8,7 +8,7 @@ import nltk                     # Natural Language Tool Kit
 from bs4 import BeautifulSoup   # to clean html text
 import matplotlib               # not explicitly called but needed to plot the confusion matrix graph
 
-# these are the same as just importing 'nltk', but allow an easier access to some functions
+# these are the same as just importing 'nltk' and 'sklearn', but allow an easier access to some functions
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
