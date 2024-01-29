@@ -1,5 +1,5 @@
 pandas
-pyarrow
 numpy
 nltk
 bs4
+sklearn
