@@ -2,4 +2,5 @@ pandas
 numpy
 nltk
 bs4
-sklearn
+scikit-learn
+matplotlib

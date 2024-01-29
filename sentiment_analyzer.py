@@ -6,6 +6,7 @@ import numpy as np              # library to do math
 import re                       # RegEx, regular expressions
 import nltk                     # Natural Language Tool Kit
 from bs4 import BeautifulSoup   # to clean html text
+import matplotlib               # not explicitly called but needed to plot the confusion matrix graph
 
 # these are the same as just importing 'nltk', but allow an easier access to some functions
 from nltk.corpus import stopwords
@@ -38,56 +39,56 @@ pd.options.mode.copy_on_write = True
 # and lemmatizes them
 
 def get_relevant_lemmas(text):
-  """
-  This function takes as input the text of a review, and gives as output
-  a list with only NOUNS, VERBS, ADJECTIVES, ADVERBS and NUMERALS/CARDINALS.
-  :param text: the ext of the review
-  :type text: string
-  :return lemma_list: the relevant lemmas that we will use in the embeddings
-  :rtype: list
-  """
+	"""
+	This function takes as input the text of a review, and gives as output
+	a list with only NOUNS, VERBS, ADJECTIVES, ADVERBS and NUMERALS/CARDINALS.
+	:param text: the ext of the review
+	:type text: string
+	:return lemma_list: the relevant lemmas that we will use in the embeddings
+	:rtype: list
+	"""
 
-  # tokenize the text to get a list of tokens
-  tokens = word_tokenize(text)
+	# tokenize the text to get a list of tokens
+	tokens = word_tokenize(text)
 
-  # remove stopwords from the list of tokens
-  stop_words = set(stopwords.words('english'))  # We set the language of the stopwords to english
-  # for each t in tokens, we check whether its lower case version is in the stop words or not
-  tokens = [t for t in tokens if t.lower() not in stop_words]
+	# remove stopwords from the list of tokens
+	stop_words = set(stopwords.words('english'))  # We set the language of the stopwords to english
+	# for each t in tokens, we check whether its lower case version is in the stop words or not
+	tokens = [t for t in tokens if t.lower() not in stop_words]
 
-  # give to each token its POS tag
-  # this creates a list of tuples, like [("token", "tag"), ...]
-  tagged = nltk.pos_tag(tokens)
-  # print(tagged)
+	# give to each token its POS tag
+	# this creates a list of tuples, like [("token", "tag"), ...]
+	tagged = nltk.pos_tag(tokens)
+	# print(tagged)
 
-  # we will use RegEx to only select the relevant POS, and to connect NLTK terms to WordNetLemmatizer terms
-  # we take into account nouns, verbs, adjectives, adverbs, and numbers
-  # moreover, re.search it takes into account the various form each input (in this case, the POS) could have
-  # for example, in RB we could find: RBR which is a comparative adverb; RBS which is a superlative adverb, etc.
-  # we create a dictionary {"NLTK POS tag" : "WordNet POS tag", ...}
-  # to relate both types of tags
-  relevant_POS = {"NN":"n", "VB":"v", "JJ":"a", "RB":"r"}
+	# we will use RegEx to only select the relevant POS, and to connect NLTK terms to WordNetLemmatizer terms
+	# we take into account nouns, verbs, adjectives, adverbs, and numbers
+	# moreover, re.search it takes into account the various form each input (in this case, the POS) could have
+	# for example, in RB we could find: RBR which is a comparative adverb; RBS which is a superlative adverb, etc.
+	# we create a dictionary {"NLTK POS tag" : "WordNet POS tag", ...}
+	# to relate both types of tags
+	relevant_POS = {"NN":"n", "VB":"v", "JJ":"a", "RB":"r"}
 
-  # we create an empty list to store the relevant tokens of the review
-  lemma_list = []
+	# we create an empty list to store the relevant tokens of the review
+	lemma_list = []
 
-  # name the lemmatizer
-  lemmatizer = WordNetLemmatizer()
+	# name the lemmatizer
+	lemmatizer = WordNetLemmatizer()
 
-  # we check what kind of tag each token has, and only store the one we want
-  for token, pos in tagged:
-    # we take care of numbers (whose NLTK POS tag is CD) differently, as we do not want to lemmatize them
-    if re.search("CD", pos):
-      lemma_list.append(token)
+	# we check what kind of tag each token has, and only store the one we want
+	for token, pos in tagged:
+	# we take care of numbers (whose NLTK POS tag is CD) differently, as we do not want to lemmatize them
+		if re.search("CD", pos):
+			lemma_list.append(token)
 
-    # we perform a RegEx search which will return all the elements with the relevant POS tag
-    for NLTK_tag in relevant_POS.keys(): # we look for the relevant NLTK POS tags
-      if re.search(NLTK_tag, pos):
-        WordNet_tag = relevant_POS.get(NLTK_tag) # we take the corresponding WordNet POS tag
-        token = lemmatizer.lemmatize(token, str(WordNet_tag)) # we lemmatize each token as its POS
-        lemma_list.append(token) # and then we append the lemma to the list
+		# we perform a RegEx search which will return all the elements with the relevant POS tag
+		for NLTK_tag in relevant_POS.keys(): # we look for the relevant NLTK POS tags
+			if re.search(NLTK_tag, pos):
+				WordNet_tag = relevant_POS.get(NLTK_tag) # we take the corresponding WordNet POS tag
+				token = lemmatizer.lemmatize(token, str(WordNet_tag)) # we lemmatize each token as its POS
+				lemma_list.append(token) # and then we append the lemma to the list
 
-  return lemma_list
+	return lemma_list
 
 
 # now that the review text are pretty clean, we have to go and actually build the feature extractor
@@ -95,83 +96,83 @@ def get_relevant_lemmas(text):
 # and we still have to apply it to each review in the DataFrame
 
 def feature_extractor(text):
-  """
-  This function takes as input the raw review, and gives as output
-  a vector in form of a dictionary which takes into account how many times each word
-  appears in that given string of text.
+	"""
+	This function takes as input the raw review, and gives as output
+	a vector in form of a dictionary which takes into account how many times each word
+	appears in that given string of text.
 
-  An example would be:
-  "this movie was really really beautiful"
-  {"movie": 1, "be": 1, "really": 2, "beautiful": 1}
+	An example would be:
+	"this movie was really really beautiful"
+	{"movie": 1, "be": 1, "really": 2, "beautiful": 1}
 
-  :param raw_review: the text of the review
-  :type raw_review: string
-  :return feature_vector: a vector {"token":count, ...}
-  :rtype: dict
-  """
+	:param raw_review: the text of the review
+	:type raw_review: string
+	:return feature_vector: a vector {"token":count, ...}
+	:rtype: dict
+	"""
 
-  # first apply the get_relevant_lemmas function we prepared above
-  review_lemmas = get_relevant_lemmas(text)
+	# first apply the get_relevant_lemmas function we prepared above
+	review_lemmas = get_relevant_lemmas(text)
 
-  # prepare the dictionary
-  feature_vector = {}
+	# prepare the dictionary
+	feature_vector = {}
 
-  # for each relevant token in the review
-  for token in review_lemmas:
-    # check if the token is already in the 'feature_vector' dictionary
-    if token in feature_vector:
-        # if the token is already in the dictionary, increment its frequency by 1
-        feature_vector[token] += 1
-    else:
-        # if the word is not in the dictionary, add it to the dictionary with a frequency of 1
-        feature_vector[token] = 1
+	# for each relevant token in the review
+	for token in review_lemmas:
+		# check if the token is already in the 'feature_vector' dictionary
+		if token in feature_vector:
+			# if the token is already in the dictionary, increment its frequency by 1
+			feature_vector[token] += 1
+		else:
+			# if the word is not in the dictionary, add it to the dictionary with a frequency of 1
+			feature_vector[token] = 1
 
-  return feature_vector
+	return feature_vector
 
 
 def create_feature_corpus(starting_dataframe):
-  """
-  This function takes as input a starting dataframe, and transforms it into a list.
-  In the list, each review is a tuple: ({dictionary of words: count}, sentiment associated)
-  :param starting_dataframe: dataframe review, sentiment
-  :type starting_dataframe: DataFrame
-  :return feature_corpus: a list of tuples [(feature_vector, sentiment), ...]
-  :rtype: list
-  """
+	"""
+	This function takes as input a starting dataframe, and transforms it into a list.
+	In the list, each review is a tuple: ({dictionary of words: count}, sentiment associated)
+	:param starting_dataframe: dataframe review, sentiment
+	:type starting_dataframe: DataFrame
+	:return feature_corpus: a list of tuples [(feature_vector, sentiment), ...]
+	:rtype: list
+	"""
 
-  # prepare the empty list to store the corpus
-  feature_corpus = []
+	# prepare the empty list to store the corpus
+	feature_corpus = []
 
-  # for each row in the dataframe:
-  for index, row in starting_dataframe.iterrows():
-    # create a vector by applying the feature extractor to each review
-    # each row is made of a "sentiment" and a "review", so we have to access the actual review with row["review"]
-    vector = feature_extractor(row["review"])
-    # append the tuple (vector, sentiment) to the list
-    feature_corpus.append((vector, row["sentiment"]))
+	# for each row in the dataframe:
+	for index, row in starting_dataframe.iterrows():
+		# create a vector by applying the feature extractor to each review
+		# each row is made of a "sentiment" and a "review", so we have to access the actual review with row["review"]
+		vector = feature_extractor(row["review"])
+		# append the tuple (vector, sentiment) to the list
+		feature_corpus.append((vector, row["sentiment"]))
 
-  return feature_corpus
+	return feature_corpus
 
 
 # Divide the dataframe into different subsets (train, test, evaluation)
 
 def divide_corpus(corpus):
-  """
-  :param corpus: either the starting corpus or the feature corpus
-  :type corpus: DataFrame OR list
-  :return training_part: 80% of the corpus, will be used for training
-  :return evaluation_part: 20% of the corpus, will be used for evaluation
-  :rtype: DataFrame OR list, same as :type corpus:
-  """
+	"""
+	:param corpus: either the starting corpus or the feature corpus
+	:type corpus: DataFrame OR list
+	:return training_part: 80% of the corpus, will be used for training
+	:return evaluation_part: 20% of the corpus, will be used for evaluation
+	:rtype: DataFrame OR list, same as :type corpus:
+	"""
 
-  # the limit is where the corpus will be split
-  # 0.80 here means the 80% of the corpus
-  limit = int(len(corpus) * 0.80)
+	# the limit is where the corpus will be split
+	# 0.80 here means the 80% of the corpus
+	limit = int(len(corpus) * 0.80)
 
-  training_part = corpus[:limit]
-  evaluation_part = corpus[limit:]
+	training_part = corpus[:limit]
+	evaluation_part = corpus[limit:]
 
-  return training_part, evaluation_part
+	return training_part, evaluation_part
 
 ########## START WORKING ##########
 

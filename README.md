@@ -8,6 +8,7 @@ This program consists of a classifier that is able to decide whether a movie rev
 - NLTK
 - BeautifulSoup
 - SciKit Learn
+- Matplotlib
 
 ## Data
 The data we used is taken from [Kaggle - IMDB 50K Movie Reviews](https://www.kaggle.com/datasets/atulanandjha/imdb-50k-movie-reviews-test-your-bert/), which was in turn taken from a Stanford dataset (look to References for more).  
